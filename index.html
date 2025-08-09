@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ramjan Khan Web Tool</title>
+<style>
+    body {
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        background: #0d1117;
+        color: white;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        padding: 20px;
+        box-sizing: border-box;
+    }
+    .glass-container {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 15px;
+        backdrop-filter: blur(12px);
+        padding: 20px;
+        width: 100%;
+        max-width: 950px;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        animation: fadeIn 0.4s ease-in-out;
+    }
+    h2 {
+        margin-bottom: 15px;
+        font-weight: 600;
+        font-size: 1.5rem;
+        text-align: center;
+    }
+    input, button {
+        width: 100%;
+        padding: 10px;
+        margin: 5px 0;
+        border: none;
+        border-radius: 8px;
+        outline: none;
+        font-size: 1rem;
+    }
+    input {
+        background: rgba(255,255,255,0.15);
+        color: white;
+    }
+    button {
+        background: #238636;
+        color: white;
+        font-weight: 500;
+        cursor: pointer;
+        transition: background 0.3s, transform 0.1s;
+    }
+    button:hover { background: #2ea043; }
+    button:active { transform: scale(0.98); }
+    .hidden { display: none; }
+    footer {
+        margin-top: 15px;
+        text-align: center;
+        font-size: 14px;
+        color: #999;
+    }
+    iframe {
+        width: 100%;
+        height: 70vh;
+        border: none;
+        border-radius: 10px;
+        background: white;
+    }
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        flex-wrap: wrap;
+    }
+    .tab-btn {
+        flex: 1;
+        background: rgba(255,255,255,0.1);
+        padding: 8px;
+        border-radius: 8px;
+        text-align: center;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+    .tab-btn:hover { background: rgba(255,255,255,0.2); }
+    .tab-btn.active { background: #238636; }
+    hr {
+        border: none;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        margin: 15px 0;
+    }
+    label { display: block; margin-top: 10px; font-size: 0.9rem; }
+    .tool-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .tool-item {
+        background: rgba(255,255,255,0.08);
+        padding: 8px;
+        border-radius: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .switch {
+        cursor: pointer;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+</head>
+<body>
+
+<!-- LOGIN PAGE -->
+<div class="glass-container" id="login-container">
+    <h2>Login</h2>
+    <input type="text" id="username" placeholder="Username">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="login()">Login</button>
+</div>
+
+<!-- GUEST MODE -->
+<div class="glass-container hidden" id="guest-container">
+    <h2>Guest Mode</h2>
+    <div class="tabs" id="guest-tabs"></div>
+    <iframe id="guestFrame"></iframe>
+    <footer>© Ramjan Khan, WhatsApp: 01891966865</footer>
+</div>
+
+<!-- ADMIN MODE -->
+<div class="glass-container hidden" id="admin-container">
+    <h2>Ramjan Khan Mode</h2>
+    
+    <div class="tabs" id="admin-tabs"></div>
+    <iframe id="adminFrame"></iframe>
+    
+    <hr>
+    <h3>Manage Accounts</h3>
+    <label>Guest Username</label>
+    <input type="text" id="guestUser">
+    <label>Guest Password</label>
+    <input type="text" id="guestPass">
+    <label>Admin Username</label>
+    <input type="text" id="adminUser">
+    <label>Admin Password</label>
+    <input type="text" id="adminPass">
+    <button onclick="saveAccounts()">Save Accounts</button>
+
+    <hr>
+    <h3>Manage Tools</h3>
+    <div class="tool-list" id="toolList"></div>
+    
+    <label>New Tool Name</label>
+    <input type="text" id="newToolName">
+    <label>New Tool URL</label>
+    <input type="text" id="newToolURL">
+    <button onclick="addTool()">Add Tool</button>
+    
+    <footer>© Ramjan Khan, WhatsApp: 01891966865</footer>
+</div>
+
+<script>
+let accounts = JSON.parse(localStorage.getItem("accounts")) || {
+    guest: { username: "admin", password: "admin" },
+    admin: { username: "ramjan khan", password: "82848874" }
+};
+
+let tools = JSON.parse(localStorage.getItem("tools")) || [
+    { name: "Unlimited Barcode Maker", url: "https://barcode25.netlify.app/", visible: true },
+    { name: "PDF Maker", url: "https://toshibabarcodepro.netlify.app/", visible: true },
+    { name: "Text Editor", url: "https://text13digit.netlify.app/", visible: true }
+];
+
+function saveToStorage() {
+    localStorage.setItem("accounts", JSON.stringify(accounts));
+    localStorage.setItem("tools", JSON.stringify(tools));
+}
+
+function login() {
+    let user = document.getElementById('username').value.trim().toLowerCase();
+    let pass = document.getElementById('password').value.trim();
+
+    if (user === accounts.guest.username && pass === accounts.guest.password) {
+        document.getElementById('login-container').classList.add('hidden');
+        loadGuestView();
+        document.getElementById('guest-container').classList.remove('hidden');
+    } else if (user === accounts.admin.username && pass === accounts.admin.password) {
+        document.getElementById('login-container').classList.add('hidden');
+        loadAdminView();
+        document.getElementById('admin-container').classList.remove('hidden');
+    } else {
+        alert("Invalid credentials!");
+    }
+}
+
+function loadGuestView() {
+    let tabContainer = document.getElementById('guest-tabs');
+    tabContainer.innerHTML = '';
+    let firstTool = null;
+
+    tools.forEach((tool, index) => {
+        if (tool.visible) {
+            if (!firstTool) firstTool = tool.url;
+            let btn = document.createElement('div');
+            btn.className = 'tab-btn';
+            btn.innerText = tool.name;
+            btn.onclick = () => {
+                document.querySelectorAll('#guest-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('guestFrame').src = tool.url;
+            };
+            tabContainer.appendChild(btn);
+            if (tabContainer.children.length === 1) btn.classList.add('active');
+        }
+    });
+    document.getElementById('guestFrame').src = firstTool || '';
+}
+
+function loadAdminView() {
+    // Load iframe tabs
+    let tabContainer = document.getElementById('admin-tabs');
+    tabContainer.innerHTML = '';
+    tools.forEach((tool, index) => {
+        let btn = document.createElement('div');
+        btn.className = 'tab-btn';
+        btn.innerText = tool.name;
+        btn.onclick = () => {
+            document.querySelectorAll('#admin-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('adminFrame').src = tool.url;
+        };
+        tabContainer.appendChild(btn);
+        if (index === 0) btn.classList.add('active');
+    });
+    document.getElementById('adminFrame').src = tools[0].url;
+
+    // Load accounts
+    document.getElementById('guestUser').value = accounts.guest.username;
+    document.getElementById('guestPass').value = accounts.guest.password;
+    document.getElementById('adminUser').value = accounts.admin.username;
+    document.getElementById('adminPass').value = accounts.admin.password;
+
+    // Load tool management
+    let toolListDiv = document.getElementById('toolList');
+    toolListDiv.innerHTML = '';
+    tools.forEach((tool, index) => {
+        let div = document.createElement('div');
+        div.className = 'tool-item';
+        div.innerHTML = `
+            <span>${tool.name}</span>
+            <label class="switch">
+                <input type="checkbox" ${tool.visible ? 'checked' : ''} onchange="toggleTool(${index})">
+            </label>
+        `;
+        toolListDiv.appendChild(div);
+    });
+}
+
+function saveAccounts() {
+    accounts.guest.username = document.getElementById('guestUser').value.trim().toLowerCase();
+    accounts.guest.password = document.getElementById('guestPass').value.trim();
+    accounts.admin.username = document.getElementById('adminUser').value.trim().toLowerCase();
+    accounts.admin.password = document.getElementById('adminPass').value.trim();
+    saveToStorage();
+    alert("Accounts updated successfully!");
+}
+
+function toggleTool(index) {
+    tools[index].visible = !tools[index].visible;
+    saveToStorage();
+}
+
+function addTool() {
+    let name = document.getElementById('newToolName').value.trim();
+    let url = document.getElementById('newToolURL').value.trim();
+    if (name && url) {
+        tools.push({ name, url, visible: true });
+        saveToStorage();
+        loadAdminView();
+        document.getElementById('newToolName').value = '';
+        document.getElementById('newToolURL').value = '';
+    } else {
+        alert("Please enter both name and URL.");
+    }
+}
+</script>
+
+</body>
+</html>
